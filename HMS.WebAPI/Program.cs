@@ -1,4 +1,7 @@
 
+using HMS.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace HMS.WebAPI
 {
     public class Program
@@ -12,6 +15,11 @@ namespace HMS.WebAPI
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+
+
+            var connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new InvalidOperationException("Connection string 'Default' not found.");
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(connectionString));
 
             var app = builder.Build();
 
