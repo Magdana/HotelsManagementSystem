@@ -16,5 +16,5 @@ public class Reservation
     [ForeignKey("Guest")]
     public int? GuestId { get; set; }
     public Guest? Guest { get; set; }
-    public List<Room>? Rooms { get; set; }
+    public List<ReservationRoom>? ReservationRooms { get; set; }
 }
