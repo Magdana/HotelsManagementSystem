@@ -33,6 +33,7 @@ public class Program
 
         //Services
         builder.Services.AddScoped<IHotelService, HotelService>();
+        builder.Services.AddScoped<IRoomService, RoomService>();
 
 
         //Mapster
