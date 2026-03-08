@@ -19,7 +19,7 @@ public class ReservationsController : ControllerBase
     }
 
     [HttpGet]
-    //[Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetAll(int hotelId, [FromQuery] ReservationFilterDto filter)
     {
         filter.HotelId = hotelId;
@@ -35,10 +35,10 @@ public class ReservationsController : ControllerBase
     }
 
     [HttpPost]
-    //[Authorize(Roles = "Guest")]
+    [Authorize(Roles = "Guest")]
     public async Task<IActionResult> Create(int hotelId, [FromBody] CreateReservationDto dto)
     {
-        //dto.GuestId = GetCurrentUserId();
+        dto.GuestId = GetCurrentUserId();
         var result = await _reservationService.CreateAsync(hotelId, dto);
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetById), new { hotelId, reservationId = result.Result!.Id }, result)
@@ -60,9 +60,9 @@ public class ReservationsController : ControllerBase
         return NoContent();
     }
 
-    //private int GetCurrentUserId()
-    //{
-    //    var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-    //    return int.TryParse(sub, out var id) ? id : 0;
-    //}
+    private int GetCurrentUserId()
+    {
+        var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        return int.TryParse(sub, out var id) ? id : 0;
+    }
 }

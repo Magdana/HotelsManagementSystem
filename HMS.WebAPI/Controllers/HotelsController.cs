@@ -31,7 +31,7 @@ public class HotelsController : ControllerBase
     }
 
     [HttpPost]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateHotelDto dto)
     {
         var result = await _hotelService.CreateAsync(dto);
@@ -41,18 +41,18 @@ public class HotelsController : ControllerBase
     }
 
     [HttpPut("{hotelId}")]
-    //[Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Update(int hotelId, [FromBody] UpdateHotelDto dto)
     {
-        //if (User.IsInRole("Manager") && !IsManagerOfHotel(hotelId))
-        //    return Forbid();
+        if (User.IsInRole("Manager") && !IsManagerOfHotel(hotelId))
+            return Forbid();
 
         var result = await _hotelService.UpdateAsync(hotelId, dto);
         return result.IsSuccess ? Ok(result) : NotFound(result);
     }
 
     [HttpDelete("{hotelId}")]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int hotelId)
     {
         var result = await _hotelService.DeleteAsync(hotelId);
@@ -60,9 +60,9 @@ public class HotelsController : ControllerBase
         return NoContent();
     }
 
-    //private bool IsManagerOfHotel(int hotelId)
-    //{
-    //    var claim = User.FindFirst("hotelId")?.Value;
-    //    return int.TryParse(claim, out var id) && id == hotelId;
-    //}
+    private bool IsManagerOfHotel(int hotelId)
+    {
+        var claim = User.FindFirst("hotelId")?.Value;
+        return int.TryParse(claim, out var id) && id == hotelId;
+    }
 }

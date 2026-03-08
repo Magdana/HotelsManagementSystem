@@ -18,8 +18,13 @@ public class Manager
     public string LastName { get; set; } = string.Empty;
     [Required]
     public string PersonalNumber { get; set; } = string.Empty;
-    public string? Email { get; set; }
-    public string? PhoneNumber { get; set; }
+    [Required]
+    public string Email { get; set; } = string.Empty;
+    [Required]
+    public string PhoneNumber { get; set; } = string.Empty;
+    [Required]
+    public string PasswordHash { get; set; } = string.Empty;
+    public string Role { get; set; } = "Manager";
     [ForeignKey("Hotel")]
     public int? HotelId { get; set; }
     public Hotel? Hotel { get; set; }

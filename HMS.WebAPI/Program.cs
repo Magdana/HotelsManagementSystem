@@ -1,12 +1,19 @@
+using HMS.Application.Interfaces;
 using HMS.Application.Interfaces.RepositoryInterfaces;
 using HMS.Application.Interfaces.ServiceInterfaces;
 using HMS.Application.Mapping;
 using HMS.Application.Services;
+using HMS.Application.Settings;
 using HMS.Infrastructure.Data;
 using HMS.Infrastructure.Repositories;
+using HMS.Infrastructure.Services;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.OpenApi;
 
 namespace HMS.WebAPI;
 
@@ -17,29 +24,80 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddControllers();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(options =>
+        {
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter your JWT token. Example: eyJhbGci..."
+            });
+
+            options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecuritySchemeReference("Bearer"),
+                    new List<string>()
+                }
+            });
+        });
 
         //dbConection
         var connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new InvalidOperationException("Connection string 'Default' not found.");
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString));
 
-        //Repositories
+        // JWT Settings
+        var jwtSection = builder.Configuration.GetSection("JwtSettings");
+        builder.Services.Configure<JwtSettings>(jwtSection);
+
+        // JWT Authentication
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSection["Issuer"],
+                    ValidAudience = jwtSection["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSection["Secret"]!))
+                };
+            });
+        builder.Services.AddAuthorization();
+
+
+
+        // Repositories
         builder.Services.AddScoped<IHotelRepository, HotelRepository>();
         builder.Services.AddScoped<IRoomRepository, RoomRepository>();
-        builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+        builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
         builder.Services.AddScoped<IGuestRepository, GuestRepository>();
+        builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 
-        //Services
+        // Services
         builder.Services.AddScoped<IHotelService, HotelService>();
         builder.Services.AddScoped<IRoomService, RoomService>();
+        builder.Services.AddScoped<IManagerService, ManagerService>();
+        builder.Services.AddScoped<IGuestService, GuestService>();
         builder.Services.AddScoped<IReservationService, ReservationService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+
 
         //Mapster
         var config = new TypeAdapterConfig();
         MappingConfig.RegisterMappings(config);
         builder.Services.AddSingleton(config);
         builder.Services.AddScoped<IMapper, ServiceMapper>();
+
+        // Utilities
+        builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 
         var app = builder.Build();
 

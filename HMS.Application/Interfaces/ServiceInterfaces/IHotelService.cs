@@ -1,5 +1,6 @@
 ﻿using HMS.Application.DTOs.Hotel;
 using HMS.Application.Models;
+
 namespace HMS.Application.Interfaces.ServiceInterfaces;
 
 public interface IHotelService
