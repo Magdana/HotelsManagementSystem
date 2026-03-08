@@ -94,7 +94,7 @@ public class RoomService : IRoomService
             return ApiResponse<bool>.Fail("Room not found.");
 
         var hasActiveReservations = await _reservationRepository.ExistsAsync(r =>
-            r.Rooms!.Any(rr => rr.Id == roomId) &&
+            r.ReservationRooms!.Any(rr => rr.RoomId == roomId) &&
             r.CheckOutDate >= DateTime.UtcNow.Date);
         if (hasActiveReservations)
             return ApiResponse<bool>.Fail("Cannot delete room: it has active or upcoming reservations.");
@@ -131,10 +131,10 @@ public class RoomService : IRoomService
         {
             var conflicting = await _reservationRepository.GetAllAsync(
                 filter: r => r.CheckInDate < filter.CheckOutDate && r.CheckOutDate > filter.CheckInDate,
-                includes: q => q.Include(r => r.Rooms!),
+                includes: q => q.Include(r => r.ReservationRooms!).ThenInclude(rr => rr.Room),
                 tracking: false);
             bookedRoomIds = conflicting.Items
-                .SelectMany(r => r.Rooms!.Select(room => room.Id))
+                .SelectMany(r => r.ReservationRooms!.Select(rr => rr.RoomId))
                 .Distinct()
                 .ToList();
         }

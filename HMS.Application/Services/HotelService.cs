@@ -57,7 +57,7 @@ public class HotelService : IHotelService
             return ApiResponse<bool>.Fail("Cannot delete hotel: it has existing rooms. Remove all rooms first.");
 
         var hasActiveReservations = await _reservationRepository.ExistsAsync(r =>
-            r.Rooms!.Any(rr => rr.HotelId == id) &&
+            r.ReservationRooms!.Any(rr => rr.Room.HotelId == id) &&
             r.CheckOutDate >= DateTime.UtcNow.Date);
         if (hasActiveReservations)
             return ApiResponse<bool>.Fail("Cannot delete hotel: it has active reservations.");

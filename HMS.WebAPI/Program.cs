@@ -16,11 +16,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-
         builder.Services.AddControllers();
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-        builder.Services.AddOpenApi();
+        builder.Services.AddSwaggerGen();
 
         //dbConection
         var connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new InvalidOperationException("Connection string 'Default' not found.");
@@ -29,12 +26,14 @@ public class Program
 
         //Repositories
         builder.Services.AddScoped<IHotelRepository, HotelRepository>();
-
+        builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+        builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+        builder.Services.AddScoped<IGuestRepository, GuestRepository>();
 
         //Services
         builder.Services.AddScoped<IHotelService, HotelService>();
         builder.Services.AddScoped<IRoomService, RoomService>();
-
+        builder.Services.AddScoped<IReservationService, ReservationService>();
 
         //Mapster
         var config = new TypeAdapterConfig();
@@ -42,22 +41,20 @@ public class Program
         builder.Services.AddSingleton(config);
         builder.Services.AddScoped<IMapper, ServiceMapper>();
 
-
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            app.MapOpenApi();
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "HMS API v1");
+            });
         }
 
         app.UseHttpsRedirection();
-
         app.UseAuthorization();
-
-
         app.MapControllers();
-
         app.Run();
     }
 }
