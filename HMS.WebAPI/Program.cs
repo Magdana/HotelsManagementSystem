@@ -24,25 +24,24 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddControllers();
+
         builder.Services.AddSwaggerGen(options =>
         {
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
+                In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "Bearer",
                 BearerFormat = "JWT",
-                In = ParameterLocation.Header,
-                Description = "Enter your JWT token. Example: eyJhbGci..."
+                Description = "Enter the Bearer Authorization string as following: Generated-JWT-Token"
             });
 
-            options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecuritySchemeReference("Bearer"),
-                    new List<string>()
-                }
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
+
         });
 
         //dbConection
@@ -107,10 +106,12 @@ public class Program
             app.UseSwaggerUI(options =>
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "HMS API v1");
+                options.EnablePersistAuthorization();
             });
         }
 
         app.UseHttpsRedirection();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();
