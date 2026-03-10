@@ -19,7 +19,7 @@ namespace HMS.WebAPI;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +84,7 @@ public class Program
         builder.Services.AddScoped<IHotelService, HotelService>();
         builder.Services.AddScoped<IRoomService, RoomService>();
         builder.Services.AddScoped<IManagerService, ManagerService>();
+        builder.Services.AddScoped<IAdminService, AdminService>();
         builder.Services.AddScoped<IGuestService, GuestService>();
         builder.Services.AddScoped<IReservationService, ReservationService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -114,6 +115,29 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
-        app.Run();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var managerRepo = scope.ServiceProvider.GetRequiredService<IManagerRepository>();
+            var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+
+            var adminExists = await managerRepo.ExistsAsync(m => m.Role == "Admin");
+            if (!adminExists)
+            {
+                await managerRepo.AddAsync(new HMS.Domain.Entities.Manager
+                {
+                    FirstName = "Seed",
+                    LastName = "Admin",
+                    PersonalNumber = "0000000000",
+                    Email = "admin@hms.com",
+                    PhoneNumber = "0000000000",
+                    PasswordHash = passwordHasher.Hash("Admin@123"),
+                    Role = "Admin"
+                });
+                await managerRepo.SaveAsync();
+            }
+        }
+
+        await app.RunAsync();
     }
 }
