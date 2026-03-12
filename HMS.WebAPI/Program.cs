@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi;
+using HMS.WebAPI.Middleware;
+using Serilog;
 
 namespace HMS.WebAPI;
 
@@ -21,7 +23,24 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+                .Build())
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .WriteTo.File(
+                path: "logs/hms-.log",
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 30,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+
+        try
+        {
         var builder = WebApplication.CreateBuilder(args);
+        builder.Host.UseSerilog();
 
         builder.Services.AddControllers();
 
@@ -111,6 +130,7 @@ public class Program
             });
         }
 
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
@@ -139,5 +159,14 @@ public class Program
         }
 
         await app.RunAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Application terminated unexpectedly.");
+        }
+        finally
+        {
+            await Log.CloseAndFlushAsync();
+        }
     }
 }
